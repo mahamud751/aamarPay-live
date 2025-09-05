@@ -1,5 +1,5 @@
 "use client";
-import axios from "axios";
+import axios, { AxiosRequestConfig, AxiosResponse, AxiosError } from "axios";
 import Cookies from "js-cookie";
 
 const API = axios.create({
@@ -7,9 +7,17 @@ const API = axios.create({
   timeout: 10000,
 });
 
+interface RequestMetadata {
+  startTime: number;
+}
+
+interface ExtendedAxiosRequestConfig extends AxiosRequestConfig {
+  metadata?: RequestMetadata;
+}
+
 API.interceptors.request.use(
   (config) => {
-    (config as any).metadata = { startTime: Date.now() };
+    (config as ExtendedAxiosRequestConfig).metadata = { startTime: Date.now() };
 
     const token = Cookies.get("authToken");
     if (token) {
@@ -24,8 +32,8 @@ API.interceptors.request.use(
 );
 
 API.interceptors.response.use(
-  (response) => {
-    const metadata = (response.config as any).metadata;
+  (response: AxiosResponse) => {
+    const metadata = (response.config as ExtendedAxiosRequestConfig).metadata;
     if (metadata) {
       const duration = Date.now() - metadata.startTime;
       console.log(`Request to ${response.config.url} took ${duration}ms`);
@@ -33,12 +41,12 @@ API.interceptors.response.use(
 
     return response;
   },
-  (error) => {
-    const metadata = (error.config as any).metadata;
+  (error: AxiosError) => {
+    const metadata = (error.config as ExtendedAxiosRequestConfig)?.metadata;
     if (metadata) {
       const duration = Date.now() - metadata.startTime;
       console.error(
-        `Request to ${error.config.url} failed after ${duration}ms:`,
+        `Request to ${error.config?.url} failed after ${duration}ms:`,
         error.message
       );
     }

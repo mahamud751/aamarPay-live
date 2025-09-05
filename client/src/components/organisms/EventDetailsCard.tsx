@@ -2,13 +2,13 @@
 
 import { motion } from "framer-motion";
 import React from "react";
-import { Event } from "@/services/types/Types";
+import { Event, User } from "@/services/types/Types";
 
 interface EventDetailsCardProps {
   event: Event;
   loading: boolean;
   handleRsvp: () => void;
-  user: any;
+  user: User | null;
   setEditingEvent: (event: Event) => void;
 }
 

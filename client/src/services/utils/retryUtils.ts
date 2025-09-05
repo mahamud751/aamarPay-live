@@ -12,7 +12,7 @@ export async function retryWithBackoff<T>(
   delay: number = 100,
   exponentialBase: number = 2
 ): Promise<T> {
-  let lastError: any;
+  let lastError: unknown;
 
   for (let i = 0; i <= retries; i++) {
     try {

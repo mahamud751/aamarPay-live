@@ -1,14 +1,13 @@
 "use client";
 
-import { useState } from "react";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 
-import EventCard from "@/components/molecules/EventCard";
 import Loader from "@/components/atoms/Loader";
-import { Event } from "@/services/types/Types";
+import EventCard from "@/components/molecules/EventCard";
 import { useEvents } from "@/contexts/EventsProviders";
 import { useAuth } from "@/contexts/hooks/auth";
+import { Event } from "@/services/types/Types";
 
 const MySwal = withReactContent(Swal);
 
@@ -25,7 +24,6 @@ export default function EventList({
 }: EventListProps) {
   const { deleteEvent, rsvpEvent } = useEvents();
   const { user } = useAuth();
-  const [rsvpedEvents, setRsvpedEvents] = useState<Set<string>>(new Set());
 
   const handleRsvp = async (eventId: string) => {
     if (!user) {
@@ -48,7 +46,6 @@ export default function EventList({
 
     try {
       await rsvpEvent(eventId);
-      setRsvpedEvents((prev) => new Set(prev).add(eventId));
 
       await MySwal.fire({
         title: "RSVP Successful!",
@@ -61,7 +58,9 @@ export default function EventList({
         "An error occurred while trying to RSVP. Please try again later.";
 
       if (error && typeof error === "object" && "response" in error) {
-        const axiosError = error as any;
+        const axiosError = error as {
+          response?: { data?: { message?: string } };
+        };
         if (axiosError.response?.data?.message) {
           message = axiosError.response.data.message;
         }
@@ -97,10 +96,21 @@ export default function EventList({
           icon: "success",
           confirmButtonColor: "#8B5CF6",
         });
-      } catch (error) {
+      } catch (error: unknown) {
+        let errorMessage = "Failed to delete the event. Please try again.";
+
+        if (error && typeof error === "object" && "response" in error) {
+          const axiosError = error as {
+            response?: { data?: { message?: string } };
+          };
+          if (axiosError.response?.data?.message) {
+            errorMessage = axiosError.response.data.message;
+          }
+        }
+
         await MySwal.fire({
           title: "Error",
-          text: "Failed to delete the event. Please try again.",
+          text: errorMessage,
           icon: "error",
           confirmButtonColor: "#8B5CF6",
         });

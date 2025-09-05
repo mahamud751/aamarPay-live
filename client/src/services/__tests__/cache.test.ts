@@ -5,6 +5,16 @@ import {
   clearEventCache,
   clearAllEventCache,
 } from "../apis/eventsOptimized";
+import API from "../apis/api";
+import { AxiosInstance } from "axios";
+
+// Define type for the mocked API
+type MockedAPI = AxiosInstance & {
+  get: jest.Mock;
+  post: jest.Mock;
+  patch: jest.Mock;
+  delete: jest.Mock;
+};
 
 jest.mock("../utils/retryUtils", () => ({
   retryApiCall: jest.fn((fn) => fn()),
@@ -50,12 +60,15 @@ describe("Event API Caching", () => {
     data: mockEventsResponse,
   };
 
+  // Store reference to the mocked API
+  let mockedAPI: MockedAPI;
+
   beforeEach(() => {
     jest.clearAllMocks();
     clearAllEventCache();
 
-    const api = require("../apis/api").default;
-    api.get.mockImplementation((url: string) => {
+    mockedAPI = API as MockedAPI;
+    mockedAPI.get.mockImplementation((url: string) => {
       if (url.includes("/events/1")) {
         return Promise.resolve(mockApiResponse);
       } else if (url.includes("/events/my-events")) {
@@ -68,59 +81,64 @@ describe("Event API Caching", () => {
   });
 
   test("should cache event data", async () => {
-    const api = require("../apis/api").default;
+    // Don't clear the mock implementation, just reset call count
+    mockedAPI.get.mockClear();
 
     await getEvent("1");
-    expect(api.get).toHaveBeenCalledTimes(1);
+    expect(mockedAPI.get).toHaveBeenCalledTimes(1);
 
     await getEvent("1");
-    expect(api.get).toHaveBeenCalledTimes(1);
+    expect(mockedAPI.get).toHaveBeenCalledTimes(1);
   }, 10000);
 
   test("should cache events list", async () => {
-    const api = require("../apis/api").default;
+    // Don't clear the mock implementation, just reset call count
+    mockedAPI.get.mockClear();
 
     await getEvents();
-    expect(api.get).toHaveBeenCalledTimes(1);
+    expect(mockedAPI.get).toHaveBeenCalledTimes(1);
 
     await getEvents();
-    expect(api.get).toHaveBeenCalledTimes(1);
+    expect(mockedAPI.get).toHaveBeenCalledTimes(1);
   }, 10000);
 
   test("should cache user events list", async () => {
-    const api = require("../apis/api").default;
+    // Don't clear the mock implementation, just reset call count
+    mockedAPI.get.mockClear();
 
     await getUserEvents();
-    expect(api.get).toHaveBeenCalledTimes(1);
+    expect(mockedAPI.get).toHaveBeenCalledTimes(1);
 
     await getUserEvents();
-    expect(api.get).toHaveBeenCalledTimes(1);
+    expect(mockedAPI.get).toHaveBeenCalledTimes(1);
   }, 10000);
 
   test("should clear specific event cache", async () => {
-    const api = require("../apis/api").default;
+    // Don't clear the mock implementation, just reset call count
+    mockedAPI.get.mockClear();
 
     await getEvent("1");
-    expect(api.get).toHaveBeenCalledTimes(1);
+    expect(mockedAPI.get).toHaveBeenCalledTimes(1);
 
     clearEventCache("1");
     await getEvent("1");
-    expect(api.get).toHaveBeenCalledTimes(2);
+    expect(mockedAPI.get).toHaveBeenCalledTimes(2);
   }, 10000);
 
   test("should clear all event cache", async () => {
-    const api = require("../apis/api").default;
+    // Don't clear the mock implementation, just reset call count
+    mockedAPI.get.mockClear();
 
     await getEvent("1");
     await getEvents();
     await getUserEvents();
-    expect(api.get).toHaveBeenCalledTimes(3);
+    expect(mockedAPI.get).toHaveBeenCalledTimes(3);
 
     clearAllEventCache();
 
     await getEvent("1");
     await getEvents();
     await getUserEvents();
-    expect(api.get).toHaveBeenCalledTimes(6);
+    expect(mockedAPI.get).toHaveBeenCalledTimes(6);
   }, 10000);
 });
